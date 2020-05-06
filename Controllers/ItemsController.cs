@@ -82,7 +82,8 @@ namespace TodoApi.Controllers
             _context.TodoItems.Add(item);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetItem", new { id = item.Id }, item);
+            // return CreatedAtAction("GetItem", new { id = item.Id }, item);
+            return CreatedAtAction(nameof(GetItem), new { id = item.Id }, item);
         }
 
         // DELETE: api/Items/5
