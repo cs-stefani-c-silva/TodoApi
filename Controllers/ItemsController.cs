@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TodoApi.Models;
+using TodoApi.Services;
 
 namespace TodoApi.Controllers
 {
@@ -13,25 +14,23 @@ namespace TodoApi.Controllers
     [ApiController]
     public class ItemsController : ControllerBase
     {
-        private readonly TodoContext _context;
+        private readonly ItemService _itemService;
 
-        public ItemsController(TodoContext context)
+        public ItemsController(ItemService itemService)
         {
-            _context = context;
+            _itemService = itemService;
         }
 
         // GET: api/Items
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Item>>> GetTodoItems()
-        {
-            return await _context.TodoItems.ToListAsync();
-        }
+        public ActionResult<List<Item>> Get() =>
+            _itemService.Get();
 
         // GET: api/Items/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Item>> GetItem(long id)
+        [HttpGet("{id:length(24)}", Name = "GetItem")]
+        public ActionResult<Item> Get(string id)
         {
-            var item = await _context.TodoItems.FindAsync(id);
+            var item = _itemService.Get(id);
 
             if (item == null)
             {
@@ -44,31 +43,17 @@ namespace TodoApi.Controllers
         // PUT: api/Items/5
         // To protect from overposting attacks, enable the specific properties you want to bind to, for
         // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutItem(long id, Item item)
+        [HttpPut("{id:length(24)}")]
+        public IActionResult Update(string id, Item itemIn)
         {
-            if (id != item.Id)
+            var item = _itemService.Get(id);
+
+            if (item == null)
             {
-                return BadRequest();
+                return NotFound();
             }
 
-            _context.Entry(item).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!ItemExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
+            _itemService.Update(id, itemIn);
 
             return NoContent();
         }
@@ -77,34 +62,27 @@ namespace TodoApi.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to, for
         // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
         [HttpPost]
-        public async Task<ActionResult<Item>> PostItem(Item item)
+        public ActionResult<Item> Create(Item item)
         {
-            _context.TodoItems.Add(item);
-            await _context.SaveChangesAsync();
+            _itemService.Create(item);
 
-            // return CreatedAtAction("GetItem", new { id = item.Id }, item);
-            return CreatedAtAction(nameof(GetItem), new { id = item.Id }, item);
+            return CreatedAtRoute("GetItem", new { id = item.Id.ToString() }, item);
         }
 
         // DELETE: api/Items/5
-        [HttpDelete("{id}")]
-        public async Task<ActionResult<Item>> DeleteItem(long id)
+        [HttpDelete("{id:length(24)}")]
+        public IActionResult Delete(string id)
         {
-            var item = await _context.TodoItems.FindAsync(id);
+            var item = _itemService.Get(id);
+
             if (item == null)
             {
                 return NotFound();
             }
 
-            _context.TodoItems.Remove(item);
-            await _context.SaveChangesAsync();
+            _itemService.Remove(item.Id);
 
-            return item;
-        }
-
-        private bool ItemExists(long id)
-        {
-            return _context.TodoItems.Any(e => e.Id == id);
+            return NoContent();
         }
     }
 }

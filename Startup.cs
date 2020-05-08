@@ -4,9 +4,11 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using TodoApi.Models;
+using TodoApi.Services;
 
 namespace TodoApi
 {
@@ -22,8 +24,16 @@ namespace TodoApi
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddDbContext<TodoContext>(opt => 
-                opt.UseInMemoryDatabase("TodoList"));
+            /*services.AddDbContext<TodoContext>(opt => 
+                opt.UseInMemoryDatabase("TodoList"));*/
+            services.Configure<ItemsDatabaseSettings>(
+                Configuration.GetSection(nameof(ItemsDatabaseSettings)));
+            
+            services.AddSingleton<IItemsDatabaseSettings>(sp =>
+                sp.GetRequiredService<IOptions<ItemsDatabaseSettings>>().Value);
+
+            services.AddSingleton<ItemService>();
+
             services.AddControllers();
 
             services.AddSwaggerGen(c =>
